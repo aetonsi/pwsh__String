@@ -21,6 +21,7 @@ function Convert-Encoding(
 
 function Get-TokenizedCommandLine(
     # TODO check out
+    #       param([parameter(ValueFromPipeline, ValueFromRemainingArguments,Mandatory)][string[]] $a)
     #       https://stackoverflow.com/questions/197233/
     #       https://github.com/beatcracker/Powershell-Misc/blob/master/Split-CommandLine.ps1
     #       https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw
