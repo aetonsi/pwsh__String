@@ -19,6 +19,52 @@ function Convert-Encoding(
     return $Encoding.GetString($Encoding.GetBytes($Str))
 }
 
+function ConvertTo-Base64String([parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)][string] $Str) {
+    $bytes = [System.Text.Encoding]::Unicode.GetBytes($Str)
+    return [Convert]::ToBase64String($bytes)
+}
+
+function ConvertFrom-Base64String([parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)][string] $Str) {
+    $bytes = [Convert]::FromBase64String($Str)
+    return [System.Text.Encoding]::Unicode.GetString($bytes)
+}
+
+function ConvertFrom-CliXml {
+    [CmdletBinding(DefaultParameterSetName = 'CliXmlString')]
+    Param(
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'CliXmlString')][string] $CliXmlString,
+        [Parameter(Mandatory, ParameterSetName = 'Recurse')][object] $XmlObject
+    )
+    # ADAPTED from https://stackoverflow.com/a/44852653
+
+    $result = $null
+    # load xml root element OR sub element
+    if ($XmlObject) {
+        $Object = $XmlObject
+    } else {
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.LoadXml($CliXmlString)
+        $Object = $xml.DocumentElement
+    }
+
+    # parses a powershell XML object or string into a PSObject
+    $result = New-Object PSObject
+    foreach ($property in $Object.PSObject.Properties) {
+        if ($property -and $property.TypeNameOfValue -eq 'System.Xml.XmlElement') {
+            $nestedObject = ConvertFrom-CliXml -XmlObject $property.Value
+            $result | Add-Member -MemberType NoteProperty -Name $property.Name -Value $nestedObject
+        } elseif ($property) {
+            $value = $property.InnerText
+            if ($property.Name -eq 'Type') {
+                # handle special case where property name is 'Type'
+                $value = $property.InnerText.Replace('System.', '')
+            }
+            $result | Add-Member -MemberType NoteProperty -Name $property.Name -Value $value
+        }
+    }
+return $result
+}
+
 function Get-TokenizedCommandLine(
     # TODO check out
     #       param([parameter(ValueFromPipeline, ValueFromRemainingArguments,Mandatory)][string[]] $a)
